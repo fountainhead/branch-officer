@@ -1,0 +1,7 @@
+.env
+.circleci
+
+src
+dist/*.spec.js
+tsconfig.json
+tslint.json

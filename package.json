@@ -1,0 +1,88 @@
+{
+  "name": "@fountainhead/branch-officer",
+  "version": "1.0.0",
+  "description": "Automates the deployment of GitHub Pull Requests as Preview Environments using Helm and Helmfile",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "jest",
+    "lint": "tslint --project tsconfig.json",
+    "build": "tsc --project tsconfig.json",
+    "commitmsg": "commitlint -E GIT_PARAMS"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FountainheadTechnologies/branch-officer.git"
+  },
+  "keywords": [
+    "helm",
+    "helmfile",
+    "github",
+    "pull",
+    "request",
+    "preview",
+    "environment"
+  ],
+  "author": "Fountainhead Technologies Ltd.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/FountainheadTechnologies/branch-officer/issues"
+  },
+  "homepage": "https://github.com/FountainheadTechnologies/branch-officer#readme",
+  "devDependencies": {
+    "@commitlint/config-conventional": "^7.1.2",
+    "@optics/codestyle": "^1.0.0",
+    "@types/cli-progress": "^1.8.0",
+    "@types/diff": "^3.5.1",
+    "@types/jest": "^23.3.1",
+    "@types/js-yaml": "^3.11.2",
+    "@types/node": "^10.9.4",
+    "@types/ramda": "^0.25.37",
+    "@types/yargs": "^11.1.1",
+    "commitlint": "^7.1.2",
+    "dotenv": "^6.0.0",
+    "husky": "^0.14.3",
+    "jest": "^23.5.0",
+    "semantic-release": "^15.9.12",
+    "ts-jest": "^23.1.4",
+    "ts-node": "^7.0.1",
+    "tslint": "^5.11.0",
+    "tslint-consistent-codestyle": "^1.13.3",
+    "typescript": "^3.0.3"
+  },
+  "dependencies": {
+    "@octokit/rest": "^15.10.0",
+    "cli-progress": "^2.1.0",
+    "cli-table3": "^0.5.1",
+    "colors": "^1.3.2",
+    "diff": "^3.5.0",
+    "env-var": "^3.3.0",
+    "js-yaml": "^3.12.0",
+    "ramda": "^0.25.0",
+    "yargs": "^12.0.1"
+  },
+  "bin": {
+    "branch-officer": "./bin/branch-officer"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "src/.*\\.spec\\.ts$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
