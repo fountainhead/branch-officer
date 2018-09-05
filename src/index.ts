@@ -77,4 +77,7 @@ const main = async () => {
     console.log(`To apply these changes to your Helmfile, re-run with the '--apply' flag`);
 };
 
-main();
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
