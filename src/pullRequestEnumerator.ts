@@ -1,12 +1,10 @@
-import Octokit, { Auth, Response } from '@octokit/rest';
+import Octokit, { GetAllResponseItem, GetCombinedStatusForRefResponse, Response } from '@octokit/rest';
 import { Bar } from 'cli-progress';
 import { safeLoadAll } from 'js-yaml';
 import {
-  always, converge, defaultTo, head, identity, ifElse, is, map, merge, mergeAll, objOf, path, pick, pipe, prop, propEq,
-  tryCatch, unapply
+  all, allPass, always, any, converge, head, identity, ifElse, is, map, merge, mergeAll, objOf, path, pick, pipe, prop,
+  tryCatch, unapply, whereEq
 } from 'ramda';
-
-import { pullRequest } from './taskList/cellRenderers';
 
 export type PullRequest = {
   number: number;
@@ -25,7 +23,7 @@ export const extractLastPage = (link: string) => {
   return matches ? parseInt(matches[1], 10) : 1;
 };
 
-export const getPrData: (resp: Response<any[]>) => PullRequest[] = pipe(
+export const getPrData: (resp: Response<GetAllResponseItem[]>) => PullRequest[] = pipe(
   prop('data'),
   map(
     converge(unapply(mergeAll), [
@@ -59,12 +57,18 @@ export const getPrData: (resp: Response<any[]>) => PullRequest[] = pipe(
   )
 );
 
-export const getBuildSucceeded: (resp: Response<any[]>) => boolean = pipe(
-  prop('data'),
-  head,
-  defaultTo({}),
-  propEq('state', 'success')
-);
+export const getBuildSucceeded = (requiredStatusChecks?: string[]) =>
+  pipe(
+    path(['data', 'statuses']),
+    requiredStatusChecks ?
+      allPass(requiredStatusChecks.map(name => any(whereEq({
+        context: name,
+        state: 'success'
+      })))) as any :
+      all(whereEq({
+        state: 'success'
+      })) as any
+  ) as (response: Response<GetCombinedStatusForRefResponse>) => boolean;
 
 type FetchAllOptions = {
   client: Octokit;
@@ -108,44 +112,53 @@ type WithBuildStatusesOptions = {
   owner: string;
   repo: string;
   pullRequests: PullRequest[];
+  statusChecker: (response: Response<GetCombinedStatusForRefResponse>) => boolean;
 };
 
-export const withBuildStatuses = async ({ client, owner, repo, pullRequests }: WithBuildStatusesOptions) => {
-  console.log('Fetching build status for open PRs');
+export const withBuildStatuses =
+  async ({ client, owner, repo, pullRequests, statusChecker }: WithBuildStatusesOptions) => {
+    console.log('Fetching build status for open PRs');
 
-  const bar = new Bar({});
-  bar.start(pullRequests.length, 0);
+    const bar = new Bar({});
+    bar.start(pullRequests.length, 0);
 
-  const buildStatuses = await Promise.all(pullRequests.map(async pr => {
-    const response = await client.repos.getStatuses({
-      ref: pr.sha,
-      per_page: 1,
-      owner,
-      repo
-    });
+    const buildStatuses = await Promise.all(pullRequests.map(async pr => {
+      const response = await client.repos.getCombinedStatusForRef({
+        ref: pr.sha,
+        owner,
+        repo
+      });
 
-    bar.increment(1);
+      bar.increment(1);
 
-    return merge(pr, {
-      buildSucceeded: getBuildSucceeded(response)
-    });
-  }));
+      return merge(pr, {
+        buildSucceeded: statusChecker(response)
+      });
+    }));
 
-  bar.stop();
+    bar.stop();
 
-  return buildStatuses;
-};
+    return buildStatuses;
+  };
 
 type FetchOptions = {
   token: string;
   owner: string;
   repo: string;
+  requiredStatusChecks?: string[];
 };
 
-export const fetch = async ({ token, owner, repo }: FetchOptions) => {
+export const fetch = async ({ token, owner, repo, requiredStatusChecks }: FetchOptions) => {
   const client = new Octokit();
   client.authenticate({ type: 'token', token });
 
   const pullRequests = await fetchAll({ client, owner, repo });
-  return withBuildStatuses({ client, owner, repo, pullRequests });
+
+  return withBuildStatuses({
+    statusChecker: getBuildSucceeded(requiredStatusChecks),
+    client,
+    owner,
+    repo,
+    pullRequests
+  });
 };

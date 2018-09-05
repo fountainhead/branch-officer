@@ -1,3 +1,5 @@
+import { GetCombinedStatusForRefResponse, Response } from '@octokit/rest';
+
 import * as prEnumerator from './pullRequestEnumerator';
 
 describe('extractLastPage', () => {
@@ -71,21 +73,57 @@ ingress: test.tld.dev
 });
 
 describe('getBuildSucceeded', () => {
-  it('returns `data[0].state === \'success\'`', () => {
-    expect(prEnumerator.getBuildSucceeded({
-      data: [{
+  const mixedResponse = {
+    data: {
+      statuses: [{
+        context: 'test: stageA',
+        state: 'success'
+      }, {
+        context: 'test: stageB',
+        state: 'success'
+      }, {
+        context: 'test: stageC',
+        state: 'failure'
+      }]
+    }
+  } as any as Response<GetCombinedStatusForRefResponse>;
+
+  const okResponse = {
+    data: {
+      statuses: [{
+        context: 'test: stageA',
+        state: 'success'
+      }, {
+        context: 'test: stageB',
         state: 'success'
       }]
-    } as any)).toBe(true);
+    }
+  } as any as Response<GetCombinedStatusForRefResponse>;
 
-    expect(prEnumerator.getBuildSucceeded({
-      data: [{
-        state: 'failed'
+  const failedResponse = {
+    data: {
+      statuses: [{
+        context: 'test: stageA',
+        state: 'failure'
+      }, {
+        context: 'test: stageB',
+        state: 'failure'
       }]
-    } as any)).toBe(false);
+    }
+  } as any as Response<GetCombinedStatusForRefResponse>;
 
-    expect(prEnumerator.getBuildSucceeded({
-      data: []
-    } as any)).toBe(false);
+  it('returns `true` only when State for each name has `state` === `success`', () => {
+    expect(prEnumerator.getBuildSucceeded(['test: stageA'])(mixedResponse)).toEqual(true);
+    expect(prEnumerator.getBuildSucceeded(['test: stageB'])(mixedResponse)).toEqual(true);
+    expect(prEnumerator.getBuildSucceeded(['test: stageC'])(mixedResponse)).toEqual(false);
+
+    expect(prEnumerator.getBuildSucceeded(['test: stageA', 'test: stageB'])(mixedResponse)).toEqual(true);
+    expect(prEnumerator.getBuildSucceeded(['test: stageA', 'test: stageC'])(mixedResponse)).toEqual(false);
+  });
+
+  it('returns `true` only when all Statues have `state` === `success` when list is omitted', () => {
+    expect(prEnumerator.getBuildSucceeded()(okResponse)).toEqual(true);
+    expect(prEnumerator.getBuildSucceeded()(mixedResponse)).toEqual(false);
+    expect(prEnumerator.getBuildSucceeded()(failedResponse)).toEqual(false);
   });
 });
