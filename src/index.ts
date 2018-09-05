@@ -1,6 +1,7 @@
 import * as env from 'env-var';
 import { join } from 'path';
 import { tap } from 'ramda';
+import untildify from 'untildify';
 import yargs from 'yargs';
 
 import { fetch as fetchReleases } from './helmfileReleaseEnumerator';
@@ -49,7 +50,7 @@ const gitHub = {
 };
 
 const helmfile = {
-  file: args.file
+  file: untildify(args.file)
 };
 
 const main = async () => {
@@ -70,7 +71,7 @@ const main = async () => {
 
   args.apply ?
     await apply({
-      file: args.file,
+      file: untildify(args.file),
       tasks
     }) :
     console.log(`To apply these changes to your Helmfile, re-run with the '--apply' flag`);
