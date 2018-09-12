@@ -1,7 +1,7 @@
 import colors from 'colors/safe';
 import { diffLines } from 'diff';
+import { safeDump } from 'js-yaml';
 
-import { dump } from '../helmfile';
 import { Task } from '../taskList';
 
 export const pullRequest = (task: Task) => {
@@ -44,10 +44,10 @@ export const valuesDiff = (task: Task) => {
     };
   }
 
-  const values = dump(task.release.values);
+  const values = safeDump(task.release.values);
 
   if (task.action === 'update') {
-    const oldValues = dump(task.oldRelease.values);
+    const oldValues = safeDump(task.oldRelease.values);
     const diff = diffLines(oldValues, values);
 
     return diff
